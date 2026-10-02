@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Khám phá Khối Lập Phương và Khối Hộp Chữ Nhật cùng 3A2</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- OrbitControls CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Canvas Confetti for Celebration Effects -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <!-- Google Fonts: Nunito & Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+      background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    /* Subtle geometric background pattern for futuristic STEM classroom */
+    .stem-bg-grid {
+      background-image: 
+        radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px),
+        radial-gradient(rgba(14, 165, 233, 0.12) 1px, transparent 1px);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+    }
+
+    #canvas-container canvas {
+      touch-action: none;
+    }
+
+    /* Glow pulse animations */
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.7)); }
+      50% { filter: drop-shadow(0 0 14px rgba(250, 204, 21, 1)); }
+    }
+
+    @keyframes float-subtle {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .animate-float {
+      animation: float-subtle 3s ease-in-out infinite;
+    }
+
+    .active-mode-btn {
+      transform: scale(1.02);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.3);
+      border-color: #38bdf8 !important;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.5);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="relative text-slate-100 stem-bg-grid h-[100dvh] w-full overflow-hidden select-none">
+
+  <!-- Header Bar: Fixed strictly to the top edge (Pinned Top Bar) -->
+  <header class="fixed top-0 left-0 right-0 z-30 w-full px-2.5 py-1.5 sm:px-4 sm:py-2 bg-slate-900/95 backdrop-blur-md border-b border-indigo-500/30 shadow-lg flex flex-col gap-1.5">
+    <!-- Row 1: Brand Title, Mode Badge & Quick Action Buttons -->
+    <div class="flex items-center justify-between gap-1.5 w-full">
+      <!-- Title & Brand -->
+      <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-xs sm:text-base shadow shadow-sky-500/30">
+          📐
+        </div>
+        <div class="min-w-0 flex items-center gap-1.5 flex-wrap">
+          <h1 class="text-[11px] sm:text-sm md:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-indigo-200 to-amber-300 uppercase tracking-tight truncate leading-tight">
+            HÌNH KHỐI 3A2
+          </h1>
+          <span id="current-mode-badge" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] sm:text-xs font-extrabold bg-sky-900/80 text-sky-200 border border-sky-600/70 truncate">
+            🔵 Khám phá Đỉnh
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons: Sound, Reset Cam, Fullscreen -->
+      <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+        <button id="btn-fullscreen" class="px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 hover:border-emerald-400 text-[10px] sm:text-xs font-bold flex items-center gap-1 transition active:scale-95 shadow">
+          <span id="fullscreen-icon">⛶</span>
+          <span id="fullscreen-text" class="hidden md:inline">Toàn màn hình</span>
+        </button>
+
+        <button id="btn-sound" class="px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-400 text-[10px] sm:text-xs font-bold flex items-center gap-1 transition active:scale-95 shadow">
+          <span id="sound-icon">🔊</span>
+        </button>
+
+        <button id="btn-reset-cam" title="Đặt lại góc nhìn mặc định" class="px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 hover:border-sky-400 text-[10px] sm:text-xs font-bold flex items-center gap-1 transition active:scale-95 shadow">
+          <span>🔄</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 2: Fixed Status Counters - Pinned at top header, completely detached from 3D models -->
+    <div id="shape-indicators-bar" class="w-full flex items-center justify-center gap-2 sm:gap-4 pt-0.5">
+      <!-- Khối Lập Phương Pill -->
+      <div id="indicator-cube" class="flex-1 max-w-[190px] bg-slate-800/90 border border-sky-400/60 rounded-lg px-2 py-0.5 sm:py-1 flex items-center justify-between shadow-sm">
+        <span class="text-[9px] sm:text-[11px] font-black text-sky-300 uppercase flex items-center gap-1 truncate">
+          <span class="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0"></span>
+          <span class="truncate">Khối Lập Phương</span>
+        </span>
+        <span id="count-cube" class="text-[10px] sm:text-xs text-amber-300 font-extrabold ml-1.5 flex-shrink-0">
+          0 đỉnh
+        </span>
+      </div>
+
+      <!-- Hộp Chữ Nhật Pill -->
+      <div id="indicator-box" class="flex-1 max-w-[190px] bg-slate-800/90 border border-orange-400/60 rounded-lg px-2 py-0.5 sm:py-1 flex items-center justify-between shadow-sm">
+        <span class="text-[9px] sm:text-[11px] font-black text-orange-300 uppercase flex items-center gap-1 truncate">
+          <span class="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></span>
+          <span class="truncate">Hộp Chữ Nhật</span>
+        </span>
+        <span id="count-box" class="text-[10px] sm:text-xs text-amber-300 font-extrabold ml-1.5 flex-shrink-0">
+          0 đỉnh
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 3D Canvas Container: Completely Free & Unobstructed -->
+  <div id="canvas-container" class="absolute inset-0 w-full h-full z-0 overflow-hidden"></div>
+
+  <!-- Object Identification Alert Pill (Pop-up on Raycast Click) -->
+  <div id="identification-pill" class="fixed top-24 sm:top-28 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 transition-all duration-300 transform scale-90 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl flex items-center gap-1.5 whitespace-nowrap">
+    <span id="id-pill-icon">✨</span>
+    <span id="id-pill-text">Đây là một đỉnh</span>
+  </div>
+
+  <!-- Special Panel: Mode 3 Face Questions -->
+  <div id="panel-mode3-questions" class="fixed top-24 left-1/2 -translate-x-1/2 z-30 w-[94%] max-w-md bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 rounded-2xl p-2.5 shadow-2xl hidden transition-all duration-300">
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-[11px] sm:text-xs font-black text-emerald-300 flex items-center gap-1">
+        <span>📝</span> Nhận biết các mặt hình khối:
+      </span>
+      <button onclick="document.getElementById('panel-mode3-questions').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <!-- Question 1: Cube Faces -->
+      <div class="bg-slate-800/80 p-2 rounded-lg border border-sky-500/30">
+        <label class="block text-[10px] sm:text-[11px] font-bold text-sky-200 mb-1 leading-tight">
+          1. Mặt khối lập phương là hình gì?
+        </label>
+        <input id="input-cube-face" type="text" placeholder="Nhập tên hình..." class="w-full px-2 py-1 rounded bg-slate-900 border border-slate-600 focus:border-sky-400 focus:outline-none text-[11px] text-amber-300 font-bold" />
+      </div>
+
+      <!-- Question 2: Rectangular Prism Faces -->
+      <div class="bg-slate-800/80 p-2 rounded-lg border border-orange-500/30">
+        <label class="block text-[10px] sm:text-[11px] font-bold text-orange-200 mb-1 leading-tight">
+          2. Mặt khối hộp chữ nhật là hình gì?
+        </label>
+        <input id="input-box-face" type="text" placeholder="Nhập tên hình..." class="w-full px-2 py-1 rounded bg-slate-900 border border-slate-600 focus:border-orange-400 focus:outline-none text-[11px] text-amber-300 font-bold" />
+      </div>
+    </div>
+
+    <!-- Check Answer Button & Feedback -->
+    <div class="mt-2 flex items-center justify-between gap-1">
+      <div id="question-feedback" class="text-[10px] sm:text-xs font-bold text-emerald-400 truncate flex-1">
+        💡 Hãy quan sát các mặt trên màn hình nhé!
+      </div>
+      <button id="btn-check-answers" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-black text-[11px] shadow active:scale-95 transition flex-shrink-0">
+        Kiểm tra
+      </button>
+    </div>
+  </div>
+
+  <!-- Special Panel: Mode 4 Wireframe Inspection Controls -->
+  <div id="panel-mode4-controls" class="fixed top-24 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-sm bg-slate-900/95 backdrop-blur-xl border border-purple-500/40 rounded-xl p-2 shadow-2xl hidden transition-all duration-300">
+    <div class="text-center text-[10px] sm:text-xs font-extrabold text-purple-300 mb-1.5">
+      🔍 BẢNG ĐIỀU KHIỂN CẤU TẠO KHUNG
+    </div>
+    <div class="grid grid-cols-3 gap-1.5">
+      <button id="btn-wire-vertices" class="px-1.5 py-1.5 rounded-lg bg-sky-950 border border-sky-500/50 text-sky-200 font-black text-[10px] sm:text-xs flex flex-col items-center gap-0.5 active:scale-95 transition">
+        <span>🔵</span>
+        <span>HIỆN ĐỈNH</span>
+      </button>
+
+      <button id="btn-wire-edges" class="px-1.5 py-1.5 rounded-lg bg-rose-950 border border-rose-500/50 text-rose-200 font-black text-[10px] sm:text-xs flex flex-col items-center gap-0.5 active:scale-95 transition">
+        <span>🔴</span>
+        <span>HIỆN CẠNH</span>
+      </button>
+
+      <button id="btn-wire-faces" class="px-1.5 py-1.5 rounded-lg bg-emerald-950 border border-emerald-500/50 text-emerald-200 font-black text-[10px] sm:text-xs flex flex-col items-center gap-0.5 active:scale-95 transition">
+        <span>🟢</span>
+        <span>HIỆN MẶT</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Section: Fixed to bottom edge, sleek and compact -->
+  <div class="fixed bottom-0 left-0 right-0 z-20 w-full p-2 sm:p-3 flex flex-col items-center gap-1.5 pointer-events-none pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]">
+    
+    <!-- Robot AI Dialogue Bubble -->
+    <div class="pointer-events-auto w-full max-w-xl bg-slate-900/90 backdrop-blur-md border border-indigo-500/40 rounded-xl px-2.5 py-1.5 flex items-center gap-2 shadow-lg">
+      <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-tr from-amber-400 to-indigo-500 flex-shrink-0 flex items-center justify-center text-xs sm:text-sm shadow">
+        🤖
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="robot-message" class="text-[10px] sm:text-xs text-slate-100 font-bold truncate leading-tight">
+          Chạm vào đỉnh để đếm (chạm giữ 1 giây để hiện toàn bộ).
+        </p>
+      </div>
+      <button id="btn-toggle-q" class="hidden text-[10px] text-emerald-300 font-extrabold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-600/50">
+        Câu hỏi
+      </button>
+    </div>
+
+    <!-- 5 Main Navigation Mode Buttons -->
+    <div class="pointer-events-auto w-full max-w-xl grid grid-cols-3 sm:flex sm:items-center sm:justify-center gap-1 sm:gap-2">
+      <!-- Mode 1: Vertices -->
+      <button id="btn-mode-vertex" class="active-mode-btn px-1.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-b from-sky-900 to-sky-950 border border-sky-400/60 text-sky-100 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow active:scale-95 transition">
+        <span>🔵</span>
+        <span class="truncate">ĐỈNH</span>
+      </button>
+
+      <!-- Mode 2: Edges -->
+      <button id="btn-mode-edge" class="px-1.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-b from-rose-900 to-rose-950 border border-rose-500/60 text-rose-100 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow active:scale-95 transition">
+        <span>🔴</span>
+        <span class="truncate">CẠNH</span>
+      </button>
+
+      <!-- Mode 3: Faces -->
+      <button id="btn-mode-face" class="px-1.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-b from-emerald-900 to-emerald-950 border border-emerald-500/60 text-emerald-100 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow active:scale-95 transition">
+        <span>🟢</span>
+        <span class="truncate">MẶT</span>
+      </button>
+
+      <!-- Mode 4: Wireframe -->
+      <button id="btn-mode-wireframe" class="col-span-2 sm:col-auto px-1.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-b from-purple-900 to-purple-950 border border-purple-500/60 text-purple-100 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow active:scale-95 transition">
+        <span>🟣</span>
+        <span class="truncate">KHUNG HÌNH KHỐI</span>
+      </button>
+
+      <!-- Final Summary Button -->
+      <button id="btn-open-summary" class="col-span-1 sm:col-auto px-1.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow active:scale-95 transition">
+        <span>🏆</span>
+        <span class="truncate">TỔNG KẾT</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Modal: "🏆 NHÀ KHÁM PHÁ HÌNH KHỐI 3A2" -->
+  <div id="modal-summary" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/85 backdrop-blur-md hidden transition-opacity duration-300">
+    <div class="relative w-full max-w-md bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 border-2 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-2xl text-center">
+      
+      <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-2xl sm:text-3xl shadow-lg mb-2">
+        🏆
+      </div>
+
+      <h2 class="text-base sm:text-xl font-black text-amber-300 uppercase tracking-wide">
+        NHÀ KHÁM PHÁ HÌNH KHỐI 3A2
+      </h2>
+
+      <p class="text-[11px] sm:text-xs text-slate-300 font-bold mt-1">
+        Robot AI: "Chúc mừng em đã xuất sắc hoàn thành bài học và trở thành Nhà khám phá hình khối của lớp 3A2!"
+      </p>
+
+      <!-- Summary Comparison Cards -->
+      <div class="grid grid-cols-2 gap-2 my-3">
+        <!-- Cube Summary -->
+        <div class="bg-sky-950/70 border border-sky-400/60 rounded-xl p-2 text-left">
+          <div class="text-[11px] sm:text-xs font-black text-sky-300 flex items-center gap-1 mb-1">
+            <span>📦</span> Khối lập phương
+          </div>
+          <ul class="text-[10px] sm:text-[11px] text-sky-100 font-bold space-y-0.5">
+            <li>✨ <b>8</b> đỉnh</li>
+            <li>📏 <b>12</b> cạnh bằng nhau</li>
+            <li>🟩 <b>6</b> mặt hình vuông</li>
+          </ul>
+        </div>
+
+        <!-- Box Summary -->
+        <div class="bg-orange-950/70 border border-orange-400/60 rounded-xl p-2 text-left">
+          <div class="text-[11px] sm:text-xs font-black text-orange-300 flex items-center gap-1 mb-1">
+            <span>📦</span> Khối hộp chữ nhật
+          </div>
+          <ul class="text-[10px] sm:text-[11px] text-orange-100 font-bold space-y-0.5">
+            <li>✨ <b>8</b> đỉnh</li>
+            <li>📏 <b>12</b> cạnh</li>
+            <li>🟧 <b>6</b> mặt hình chữ nhật</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-indigo-900/60 border border-indigo-400/40 rounded-lg p-2 text-[10px] sm:text-xs text-indigo-200 font-semibold mb-3">
+        🎯 <b>Ghi nhớ:</b> Cả 2 khối đều có <b>8 đỉnh</b>, <b>12 cạnh</b> và <b>6 mặt</b>!
+      </div>
+
+      <button id="btn-close-summary" class="w-full py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs shadow active:scale-95 transition">
+        Tiếp tục khám phá ⭐
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Audio System: Tone Synthesizer & Vietnamese Speech */
+    const AudioEngine = {
+      soundEnabled: true,
+      audioCtx: null,
+
+      init() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.audioCtx = new AudioContext();
+        } catch (e) {
+          console.warn('AudioContext not supported');
+        }
+      },
+
+      playBeep(freq = 440, type = 'sine', duration = 0.15) {
+        if (!this.soundEnabled) return;
+        try {
+          if (!this.audioCtx) this.init();
+          if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          osc.start();
+          osc.stop(this.audioCtx.currentTime + duration);
+        } catch (e) {
+          console.warn(e);
+        }
+      },
+
+      playCelebrationFanfare() {
+        if (!this.soundEnabled) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => this.playBeep(freq, 'triangle', 0.2), idx * 100);
+        });
+      },
+
+      speak(text) {
+        if (!this.soundEnabled || !window.speechSynthesis) return;
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'vi-VN';
+          utterance.rate = 1.05;
+          utterance.pitch = 1.05;
+
+          const voices = window.speechSynthesis.getVoices();
+          const viVoice = voices.find(v => v.lang.includes('vi'));
+          if (viVoice) utterance.voice = viVoice;
+
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {
+          console.warn('Speech synthesis error:', e);
+        }
+      }
+    };
+
+    /* Three.js Environment Setup: Full 360 Degree OrbitControls */
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.025);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    let defaultCamPos = new THREE.Vector3(0, 0, 11);
+    camera.position.copy(defaultCamPos);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // OrbitControls configured for full 360 degree rotation without constraints
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 3.0;
+    controls.maxDistance = 25;
+    // Allow 360 vertical and horizontal rotation
+    controls.minPolarAngle = 0.02;
+    controls.maxPolarAngle = Math.PI - 0.02;
+
+    /* Lighting */
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.2);
+    dirLight.position.set(6, 12, 8);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const blueRimLight = new THREE.PointLight(0x38bdf8, 1.3, 20);
+    blueRimLight.position.set(-6, 4, -4);
+    scene.add(blueRimLight);
+
+    const orangeRimLight = new THREE.PointLight(0xfb923c, 1.3, 20);
+    orangeRimLight.position.set(6, 4, -4);
+    scene.add(orangeRimLight);
+
+    /* Floor with soft reflection grid */
+    const floorGeo = new THREE.PlaneGeometry(36, 36);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x070b14,
+      roughness: 0.85,
+      metalness: 0.1
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -3.2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const floorGrid = new THREE.GridHelper(30, 30, 0x38bdf8, 0x1e293b);
+    floorGrid.position.y = -3.19;
+    scene.add(floorGrid);
+
+    /* 3D Shape Construction */
+    const ShapeBuilder = {
+      createShapeGroup(type, size, position, baseColorHex) {
+        const group = new THREE.Group();
+        group.position.copy(position);
+        group.userData = { type, size, name: type === 'cube' ? 'Khối Lập Phương' : 'Khối Hộp Chữ Nhật' };
+
+        const [w, h, d] = size;
+        const hw = w / 2, hh = h / 2, hd = d / 2;
+
+        /* 1. Base Solid Mesh */
+        const boxGeo = new THREE.BoxGeometry(w, h, d);
+        const solidMat = new THREE.MeshStandardMaterial({
+          color: baseColorHex,
+          roughness: 0.35,
+          metalness: 0.1,
+          transparent: true,
+          opacity: 0.88,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 1
+        });
+        const solidMesh = new THREE.Mesh(boxGeo, solidMat);
+        solidMesh.castShadow = true;
+        solidMesh.receiveShadow = true;
+        solidMesh.userData = { parentGroup: group, isSolid: true };
+        group.add(solidMesh);
+
+        /* 2. Wireframe Lines */
+        const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+        const wireMat = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.45,
+          linewidth: 2
+        });
+        const wireLines = new THREE.LineSegments(edgesGeo, wireMat);
+        group.add(wireLines);
+
+        /* 3. Vertices (8 small glowing spheres - No numbered labels) */
+        const vertexCoords = [
+          [-hw, -hh, -hd], [hw, -hh, -hd], [hw, -hh, hd], [-hw, -hh, hd],
+          [-hw,  hh, -hd], [hw,  hh, -hd], [hw,  hh, hd], [-hw,  hh, hd]
+        ];
+
+        const vertices = [];
+        const sphereGeo = new THREE.SphereGeometry(0.16, 24, 24);
+
+        vertexCoords.forEach((coord, idx) => {
+          const sphereMat = new THREE.MeshStandardMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.5,
+            roughness: 0.2
+          });
+          const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+          sphere.position.set(...coord);
+          sphere.userData = {
+            kind: 'vertex',
+            parentGroup: group,
+            shapeType: type,
+            originalPos: new THREE.Vector3(...coord),
+            index: idx,
+            selected: false
+          };
+          group.add(sphere);
+          vertices.push(sphere);
+        });
+
+        /* 4. Interactive Edges (12 Cylinders with generous radius for easy touching) */
+        const edgePairs = [
+          [0, 1], [1, 2], [2, 3], [3, 0],
+          [4, 5], [5, 6], [6, 7], [7, 4],
+          [0, 4], [1, 5], [2, 6], [3, 7]
+        ];
+
+        const edges = [];
+        edgePairs.forEach((pair, idx) => {
+          const p1 = new THREE.Vector3(...vertexCoords[pair[0]]);
+          const p2 = new THREE.Vector3(...vertexCoords[pair[1]]);
+          const dist = p1.distanceTo(p2);
+
+          const edgeGeo = new THREE.CylinderGeometry(0.08, 0.08, dist, 16);
+          const edgeMat = new THREE.MeshStandardMaterial({
+            color: 0x94a3b8,
+            emissive: 0x475569,
+            emissiveIntensity: 0.25,
+            roughness: 0.3
+          });
+
+          const edgeMesh = new THREE.Mesh(edgeGeo, edgeMat);
+          const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+          edgeMesh.position.copy(midPoint);
+          edgeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+
+          edgeMesh.userData = {
+            kind: 'edge',
+            parentGroup: group,
+            shapeType: type,
+            pair,
+            index: idx,
+            selected: false
+          };
+
+          group.add(edgeMesh);
+          edges.push(edgeMesh);
+        });
+
+        /* 5. Interactive Faces (6 translucent planar meshes) */
+        const faceConfigs = [
+          { size: [w, h], pos: [0, 0, hd + 0.005], rot: [0, 0, 0], edgeIndices: [2, 6, 9, 10] },
+          { size: [w, h], pos: [0, 0, -hd - 0.005], rot: [0, Math.PI, 0], edgeIndices: [0, 4, 8, 11] },
+          { size: [w, d], pos: [0, hh + 0.005, 0], rot: [-Math.PI / 2, 0, 0], edgeIndices: [4, 5, 6, 7] },
+          { size: [w, d], pos: [0, -hh - 0.005, 0], rot: [Math.PI / 2, 0, 0], edgeIndices: [0, 1, 2, 3] },
+          { size: [d, h], pos: [hw + 0.005, 0, 0], rot: [0, Math.PI / 2, 0], edgeIndices: [1, 5, 9, 11] },
+          { size: [d, h], pos: [-hw - 0.005, 0, 0], rot: [0, -Math.PI / 2, 0], edgeIndices: [3, 7, 8, 10] }
+        ];
+
+        const faces = [];
+        faceConfigs.forEach((cfg, idx) => {
+          const planeGeo = new THREE.PlaneGeometry(cfg.size[0], cfg.size[1]);
+          const faceMat = new THREE.MeshStandardMaterial({
+            color: 0x10b981,
+            emissive: 0x059669,
+            emissiveIntensity: 0.1,
+            transparent: true,
+            opacity: 0.0,
+            side: THREE.DoubleSide
+          });
+
+          const faceMesh = new THREE.Mesh(planeGeo, faceMat);
+          faceMesh.position.set(...cfg.pos);
+          faceMesh.rotation.set(...cfg.rot);
+          faceMesh.userData = {
+            kind: 'face',
+            parentGroup: group,
+            shapeType: type,
+            edgeIndices: cfg.edgeIndices,
+            index: idx,
+            selected: false
+          };
+
+          group.add(faceMesh);
+          faces.push(faceMesh);
+        });
+
+        scene.add(group);
+
+        return {
+          group,
+          solidMesh,
+          wireLines,
+          vertices,
+          edges,
+          faces,
+          type,
+          selectedVertices: new Set(),
+          selectedEdges: new Set(),
+          selectedFaces: new Set()
+        };
+      }
+    };
+
+    /* Build Cube & Rectangular Prism (Compact proportion for mobile screen) */
+    const Models = {
+      cube: ShapeBuilder.createShapeGroup('cube', [1.9, 1.9, 1.9], new THREE.Vector3(0, 1.25, 0), 0x60a5fa),
+      box: ShapeBuilder.createShapeGroup('box', [1.6, 2.3, 1.6], new THREE.Vector3(0, -1.25, 0), 0xfb923c)
+    };
+
+    /* Application State Management */
+    const AppState = {
+      mode: 'vertex',
+      robotMessageEl: document.getElementById('robot-message'),
+      modeBadgeEl: document.getElementById('current-mode-badge'),
+      countCubeEl: document.getElementById('count-cube'),
+      countBoxEl: document.getElementById('count-box'),
+
+      setMode(newMode) {
+        this.mode = newMode;
+        this.resetAllHighlights();
+
+        const btns = {
+          vertex: document.getElementById('btn-mode-vertex'),
+          edge: document.getElementById('btn-mode-edge'),
+          face: document.getElementById('btn-mode-face'),
+          wireframe: document.getElementById('btn-mode-wireframe')
+        };
+        Object.entries(btns).forEach(([k, btn]) => {
+          if (btn) {
+            if (k === newMode) btn.classList.add('active-mode-btn');
+            else btn.classList.remove('active-mode-btn');
+          }
+        });
+
+        const mode3Panel = document.getElementById('panel-mode3-questions');
+        const mode4Panel = document.getElementById('panel-mode4-controls');
+        const btnToggleQ = document.getElementById('btn-toggle-q');
+        
+        mode3Panel.classList.add('hidden');
+        mode4Panel.classList.add('hidden');
+        if (btnToggleQ) btnToggleQ.classList.add('hidden');
+
+        if (newMode === 'vertex') {
+          this.modeBadgeEl.innerHTML = '🔵 Khám phá Đỉnh';
+          this.modeBadgeEl.className = 'inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-extrabold bg-sky-900/80 text-sky-200 border border-sky-600/70 truncate';
+          this.robotMessageEl.textContent = 'Chạm vào các đỉnh để đếm (chạm giữ 1 giây để hiện toàn bộ).';
+          this.setMeshesVisibility({ vertices: true, edges: true, solid: true, faces: false, wireframeOnly: false });
+        } 
+        else if (newMode === 'edge') {
+          this.modeBadgeEl.innerHTML = '🔴 Khám phá Cạnh';
+          this.modeBadgeEl.className = 'inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-extrabold bg-rose-900/80 text-rose-200 border border-rose-600/70 truncate';
+          this.robotMessageEl.textContent = 'Chạm vào các cạnh của 2 khối. Cạnh sẽ chuyển sang màu đỏ rực rỡ!';
+          this.setMeshesVisibility({ vertices: false, edges: true, solid: true, faces: false, wireframeOnly: false });
+        } 
+        else if (newMode === 'face') {
+          this.modeBadgeEl.innerHTML = '🟢 Khám phá Mặt';
+          this.modeBadgeEl.className = 'inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-extrabold bg-emerald-900/80 text-emerald-200 border border-emerald-600/70 truncate';
+          this.robotMessageEl.textContent = 'Chạm vào các mặt để thấy phát sáng màu xanh lá. Quan sát xem là hình gì nhé!';
+          if (btnToggleQ) {
+            btnToggleQ.classList.remove('hidden');
+            btnToggleQ.onclick = () => mode3Panel.classList.toggle('hidden');
+          }
+          this.setMeshesVisibility({ vertices: false, edges: true, solid: false, faces: true, wireframeOnly: false });
+        } 
+        else if (newMode === 'wireframe') {
+          this.modeBadgeEl.innerHTML = '🟣 Khung hình khối';
+          this.modeBadgeEl.className = 'inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] sm:text-xs font-extrabold bg-purple-900/80 text-purple-200 border border-purple-600/70 truncate';
+          this.robotMessageEl.textContent = 'Bấm nút "HIỆN ĐỈNH", "HIỆN CẠNH", "HIỆN MẶT" để xem khung cấu tạo!';
+          mode4Panel.classList.remove('hidden');
+          this.setMeshesVisibility({ vertices: false, edges: true, solid: false, faces: false, wireframeOnly: true });
+        }
+
+        this.updateHUDCounts();
+      },
+
+      setMeshesVisibility(cfg) {
+        ['cube', 'box'].forEach(k => {
+          const model = Models[k];
+          model.vertices.forEach(v => v.visible = cfg.vertices);
+          model.edges.forEach(e => {
+            e.visible = cfg.edges;
+            e.material.opacity = cfg.wireframeOnly ? 0.35 : 0.8;
+          });
+          model.solidMesh.visible = cfg.solid;
+          model.wireLines.visible = true;
+          model.faces.forEach(f => {
+            f.visible = cfg.faces;
+            f.material.opacity = cfg.faces ? (f.userData.selected ? 0.8 : 0.25) : 0.0;
+          });
+        });
+      },
+
+      resetAllHighlights() {
+        ['cube', 'box'].forEach(k => {
+          const model = Models[k];
+          model.selectedVertices.clear();
+          model.selectedEdges.clear();
+          model.selectedFaces.clear();
+
+          model.vertices.forEach(v => {
+            v.userData.selected = false;
+            v.scale.set(1, 1, 1);
+            v.material.color.setHex(0x38bdf8);
+            v.material.emissive.setHex(0x0284c7);
+            v.material.emissiveIntensity = 0.5;
+          });
+
+          model.edges.forEach(e => {
+            e.userData.selected = false;
+            e.material.color.setHex(0x94a3b8);
+            e.material.emissive.setHex(0x475569);
+            e.material.emissiveIntensity = 0.25;
+          });
+
+          model.faces.forEach(f => {
+            f.userData.selected = false;
+            f.material.color.setHex(0x10b981);
+            f.material.emissive.setHex(0x059669);
+            f.material.opacity = this.mode === 'face' ? 0.25 : 0.0;
+          });
+        });
+      },
+
+      updateHUDCounts() {
+        const mode = this.mode;
+        if (mode === 'vertex') {
+          this.countCubeEl.textContent = `${Models.cube.selectedVertices.size} đỉnh`;
+          this.countBoxEl.textContent = `${Models.box.selectedVertices.size} đỉnh`;
+        } else if (mode === 'edge') {
+          this.countCubeEl.textContent = `${Models.cube.selectedEdges.size} cạnh`;
+          this.countBoxEl.textContent = `${Models.box.selectedEdges.size} cạnh`;
+        } else if (mode === 'face') {
+          this.countCubeEl.textContent = `${Models.cube.selectedFaces.size} mặt`;
+          this.countBoxEl.textContent = `${Models.box.selectedFaces.size} mặt`;
+        } else {
+          this.countCubeEl.textContent = `Khung 3D`;
+          this.countBoxEl.textContent = `Khung 3D`;
+        }
+      }
+    };
+
+    /* Raycaster & Touch Interaction with Priority: Vertices > Edges > Faces */
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Line.threshold = 0.15;
+    const mouse = new THREE.Vector2();
+
+    const pillEl = document.getElementById('identification-pill');
+    const pillTextEl = document.getElementById('id-pill-text');
+    let pillTimer = null;
+
+    function showPill(text, icon = '✨') {
+      document.getElementById('id-pill-icon').textContent = icon;
+      pillTextEl.textContent = text;
+      pillEl.classList.remove('opacity-0', 'scale-90');
+      pillEl.classList.add('opacity-100', 'scale-100');
+
+      clearTimeout(pillTimer);
+      pillTimer = setTimeout(() => {
+        pillEl.classList.remove('opacity-100', 'scale-100');
+        pillEl.classList.add('opacity-0', 'scale-90');
+      }, 1600);
+    }
+
+    function handleSelection(target) {
+      if (!target || !target.userData) return;
+      const data = target.userData;
+      const model = Models[data.shapeType];
+      if (!model) return;
+
+      if (data.kind === 'vertex') {
+        target.userData.selected = true;
+        model.selectedVertices.add(data.index);
+
+        target.material.color.setHex(0xfbbf24);
+        target.material.emissive.setHex(0xf59e0b);
+        target.material.emissiveIntensity = 1.0;
+        target.scale.set(1.4, 1.4, 1.4);
+        setTimeout(() => target.scale.set(1.2, 1.2, 1.2), 220);
+
+        showPill(`Đây là một đỉnh (${model.selectedVertices.size} đỉnh)`, '🔵');
+        AudioEngine.playBeep(587.33, 'sine', 0.18);
+        AudioEngine.speak("Đây là một đỉnh.");
+        AppState.robotMessageEl.textContent = `Em vừa tìm được một đỉnh của ${data.shapeType === 'cube' ? 'Khối Lập Phương' : 'Khối Hộp Chữ Nhật'}!`;
+      } 
+      else if (data.kind === 'edge') {
+        target.userData.selected = true;
+        model.selectedEdges.add(data.index);
+
+        target.material.color.setHex(0xf43f5e);
+        target.material.emissive.setHex(0xe11d48);
+        target.material.emissiveIntensity = 0.9;
+
+        showPill(`Đây là một cạnh (${model.selectedEdges.size} cạnh)`, '🔴');
+        AudioEngine.playBeep(440, 'triangle', 0.18);
+        AudioEngine.speak("Đây là một cạnh.");
+        AppState.robotMessageEl.textContent = `Em vừa tìm được một cạnh của ${data.shapeType === 'cube' ? 'Khối Lập Phương' : 'Khối Hộp Chữ Nhật'}!`;
+      }
+      else if (data.kind === 'face') {
+        target.userData.selected = true;
+        model.selectedFaces.add(data.index);
+
+        target.material.color.setHex(0x10b981);
+        target.material.emissive.setHex(0x059669);
+        target.material.opacity = 0.85;
+
+        if (data.edgeIndices) {
+          data.edgeIndices.forEach(eIdx => {
+            const edge = model.edges[eIdx];
+            if (edge) {
+              edge.material.color.setHex(0x34d399);
+              edge.material.emissive.setHex(0x10b981);
+              edge.material.emissiveIntensity = 0.8;
+            }
+          });
+        }
+
+        showPill(`Đây là một mặt (${model.selectedFaces.size} mặt)`, '🟢');
+        AudioEngine.playBeep(659.25, 'sine', 0.22);
+        AudioEngine.speak("Đây là một mặt.");
+        AppState.robotMessageEl.textContent = `Em vừa chọn một mặt của ${data.shapeType === 'cube' ? 'Khối Lập Phương' : 'Khối Hộp Chữ Nhật'}!`;
+      }
+
+      AppState.updateHUDCounts();
+
+      if (model.selectedVertices.size === 8 && AppState.mode === 'vertex') {
+        confetti({ particleCount: 25, spread: 50, origin: { y: 0.55 } });
+      }
+    }
+
+    /* Touch Gestures: 360 Rotation, Double-tap Reset, Long-press Reveal */
+    let touchStartTime = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let longPressTimer = null;
+    let lastTapTime = 0;
+
+    function revealAllForMode() {
+      ['cube', 'box'].forEach(k => {
+        const model = Models[k];
+        if (AppState.mode === 'vertex') {
+          model.vertices.forEach(v => handleSelection(v));
+          AudioEngine.speak("Có 8 đỉnh");
+        } else if (AppState.mode === 'edge') {
+          model.edges.forEach(e => handleSelection(e));
+          AudioEngine.speak("Có 12 cạnh");
+        } else if (AppState.mode === 'face') {
+          model.faces.forEach(f => handleSelection(f));
+          AudioEngine.speak("Có 6 mặt");
+        }
+      });
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+      showPill("Đã hiển thị toàn bộ!", "🌟");
+    }
+
+    function checkRaycast(clientX, clientY) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const candidates = [];
+      ['cube', 'box'].forEach(k => {
+        const m = Models[k];
+        if (AppState.mode === 'vertex') candidates.push(...m.vertices);
+        else if (AppState.mode === 'edge') candidates.push(...m.edges);
+        else if (AppState.mode === 'face') candidates.push(...m.faces);
+        else if (AppState.mode === 'wireframe') candidates.push(...m.vertices, ...m.edges);
+      });
+
+      const intersects = raycaster.intersectObjects(candidates, false);
+      if (intersects.length > 0) {
+        handleSelection(intersects[0].object);
+        return true;
+      }
+      return false;
+    }
+
+    // Touch Event Listeners on container
+    container.addEventListener('pointerdown', (e) => {
+      touchStartTime = Date.now();
+      touchStartX = e.clientX;
+      touchStartY = e.clientY;
+
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+        revealAllForMode();
+        longPressTimer = null;
+      }, 950);
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      const dist = Math.hypot(e.clientX - touchStartX, e.clientY - touchStartY);
+      if (dist > 10) clearTimeout(longPressTimer);
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      clearTimeout(longPressTimer);
+      const duration = Date.now() - touchStartTime;
+      const dist = Math.hypot(e.clientX - touchStartX, e.clientY - touchStartY);
+
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        resetCameraView();
+        lastTapTime = 0;
+        return;
+      }
+      lastTapTime = now;
+
+      if (duration < 350 && dist < 12) {
+        checkRaycast(e.clientX, e.clientY);
+      }
+    });
+
+    /* Mode 4: Wireframe Inspection Button Actions */
+    document.getElementById('btn-wire-vertices').addEventListener('click', () => {
+      ['cube', 'box'].forEach(k => {
+        const model = Models[k];
+        model.vertices.forEach(v => {
+          v.visible = true;
+          v.material.color.setHex(0xfbbf24);
+          v.material.emissive.setHex(0xf59e0b);
+          v.material.emissiveIntensity = 1;
+        });
+      });
+      AudioEngine.playCelebrationFanfare();
+      AudioEngine.speak("Có 8 đỉnh");
+      showPill("Có 8 đỉnh", "🔵");
+      AppState.robotMessageEl.textContent = "Khối lập phương và khối hộp chữ nhật đều có đúng 8 đỉnh!";
+    });
+
+    document.getElementById('btn-wire-edges').addEventListener('click', () => {
+      ['cube', 'box'].forEach(k => {
+        const model = Models[k];
+        model.edges.forEach((e, idx) => {
+          e.visible = true;
+          setTimeout(() => {
+            e.material.color.setHex(0xf43f5e);
+            e.material.emissive.setHex(0xe11d48);
+            e.material.emissiveIntensity = 0.9;
+            AudioEngine.playBeep(420 + idx * 25, 'sine', 0.08);
+          }, idx * 50);
+        });
+      });
+      setTimeout(() => {
+        AudioEngine.speak("Có 12 cạnh");
+        showPill("Có 12 cạnh", "🔴");
+      }, 700);
+      AppState.robotMessageEl.textContent = "Cả hai khối đều được tạo thành từ 12 cạnh!";
+    });
+
+    document.getElementById('btn-wire-faces').addEventListener('click', () => {
+      ['cube', 'box'].forEach(k => {
+        const model = Models[k];
+        model.faces.forEach((f, idx) => {
+          f.visible = true;
+          setTimeout(() => {
+            f.material.color.setHex(0x10b981);
+            f.material.emissive.setHex(0x059669);
+            f.material.opacity = 0.75;
+            AudioEngine.playBeep(520 + idx * 30, 'triangle', 0.1);
+          }, idx * 80);
+        });
+      });
+      setTimeout(() => {
+        AudioEngine.speak("Có 6 mặt");
+        showPill("Có 6 mặt", "🟢");
+      }, 600);
+      AppState.robotMessageEl.textContent = "Mỗi khối có tất cả 6 mặt hoàn chỉnh!";
+    });
+
+    /* Mode 3 Face Shape Interactive Verification */
+    document.getElementById('btn-check-answers').addEventListener('click', () => {
+      const cubeAns = (document.getElementById('input-cube-face').value || '').trim().toLowerCase();
+      const boxAns = (document.getElementById('input-box-face').value || '').trim().toLowerCase();
+      const feedback = document.getElementById('question-feedback');
+
+      const isCubeCorrect = cubeAns.includes('vuông') || cubeAns.includes('hinh vuong');
+      const isBoxCorrect = boxAns.includes('chữ nhật') || boxAns.includes('chu nhat');
+
+      if (isCubeCorrect && isBoxCorrect) {
+        feedback.innerHTML = "🎉 <b>Chính xác!</b> Mặt lập phương là hình vuông; Mặt hộp chữ nhật là hình chữ nhật!";
+        feedback.className = "text-[10px] sm:text-xs font-black text-amber-300 truncate flex-1";
+        AudioEngine.playCelebrationFanfare();
+        confetti({ particleCount: 35, spread: 60 });
+        AudioEngine.speak("Em trả lời rất chính xác!");
+      } else if (isCubeCorrect || isBoxCorrect) {
+        feedback.innerHTML = "👍 Đúng một nửa rồi! Hãy quan sát kỹ lại khối còn lại nhé.";
+        feedback.className = "text-[10px] sm:text-xs font-bold text-sky-300 truncate flex-1";
+        AudioEngine.playBeep(440, 'sine', 0.18);
+      } else {
+        feedback.innerHTML = "💡 Gợi ý: Mặt khối lập phương có 4 cạnh bằng nhau!";
+        feedback.className = "text-[10px] sm:text-xs font-bold text-rose-300 truncate flex-1";
+        AudioEngine.playBeep(330, 'sine', 0.18);
+      }
+    });
+
+    /* Intelligent Responsive Screen Auto-Framing for Mobile & Desktop */
+    const ResponsiveLayout = {
+      isPortrait: false,
+      isMobile: false,
+
+      detectDevice() {
+        this.isPortrait = window.innerHeight > window.innerWidth;
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      },
+
+      updateLayout() {
+        this.detectDevice();
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const aspect = width / height;
+
+        camera.aspect = aspect;
+
+        if (this.isPortrait) {
+          // Portrait layout: Comfortable vertical separation between shapes
+          // Cube on top, Rectangular Prism on bottom, zero obstruction
+          Models.cube.group.position.set(0, 1.45, 0);
+          Models.box.group.position.set(0, -1.45, 0);
+
+          const scale = width < 420 ? 0.82 : 0.90;
+          Models.cube.group.scale.set(scale, scale, scale);
+          Models.box.group.scale.set(scale, scale, scale);
+
+          // Camera distance dynamically adjusted so both shapes fit between fixed top header and bottom controls
+          const requiredDist = Math.max(9.8, 7.0 / Math.max(aspect, 0.42));
+          defaultCamPos.set(0, 0, requiredDist);
+          controls.target.set(0, 0, 0);
+        } else {
+          // Landscape layout: side-by-side with clear separation, perfectly centered in viewport
+          const xSpacing = width < 900 ? 2.6 : 3.0;
+          Models.cube.group.position.set(-xSpacing, 0, 0);
+          Models.box.group.position.set(xSpacing, 0, 0);
+
+          Models.cube.group.scale.set(1.0, 1.0, 1.0);
+          Models.box.group.scale.set(1.0, 1.0, 1.0);
+
+          const baseZ = aspect < 1.4 ? 10.5 : (aspect < 1.7 ? 9.6 : 8.8);
+          defaultCamPos.set(0, 0, baseZ);
+          controls.target.set(0, 0, 0);
+        }
+
+        camera.position.copy(defaultCamPos);
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        controls.update();
+      }
+    };
+
+    /* Fullscreen Controller */
+    const FullscreenManager = {
+      btn: document.getElementById('btn-fullscreen'),
+      icon: document.getElementById('fullscreen-icon'),
+      text: document.getElementById('fullscreen-text'),
+
+      init() {
+        if (!this.btn) return;
+        this.btn.addEventListener('click', () => this.toggle());
+
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+          document.addEventListener(evt, () => this.updateUI());
+        });
+      },
+
+      isFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      },
+
+      async toggle() {
+        try {
+          if (!this.isFullscreen()) {
+            const el = document.documentElement;
+            if (el.requestFullscreen) await el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+            else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) await document.msExitFullscreen();
+          }
+        } catch (e) {
+          showPill(this.isFullscreen() ? "Đã thoát toàn màn hình" : "Đã bật toàn màn hình", "⛶");
+        }
+        setTimeout(() => ResponsiveLayout.updateLayout(), 150);
+      },
+
+      updateUI() {
+        const active = this.isFullscreen();
+        if (this.icon) this.icon.textContent = active ? "🗗" : "⛶";
+        if (this.text) this.text.textContent = active ? "Thu nhỏ" : "Toàn màn hình";
+        if (this.btn) {
+          if (active) this.btn.classList.add('border-emerald-400', 'bg-emerald-950/60');
+          else this.btn.classList.remove('border-emerald-400', 'bg-emerald-950/60');
+        }
+        ResponsiveLayout.updateLayout();
+      }
+    };
+    FullscreenManager.init();
+
+    function resetCameraView() {
+      camera.position.copy(defaultCamPos);
+      controls.target.set(0, 0, 0);
+      controls.update();
+      showPill("Đã đặt lại góc nhìn", "🔄");
+      AudioEngine.playBeep(660, 'sine', 0.15);
+    }
+    document.getElementById('btn-reset-cam').addEventListener('click', resetCameraView);
+
+    window.addEventListener('resize', () => ResponsiveLayout.updateLayout());
+    window.addEventListener('orientationchange', () => setTimeout(() => ResponsiveLayout.updateLayout(), 200));
+
+    /* UI Navigation Mode Handlers */
+    document.getElementById('btn-mode-vertex').addEventListener('click', () => AppState.setMode('vertex'));
+    document.getElementById('btn-mode-edge').addEventListener('click', () => AppState.setMode('edge'));
+    document.getElementById('btn-mode-face').addEventListener('click', () => AppState.setMode('face'));
+    document.getElementById('btn-mode-wireframe').addEventListener('click', () => AppState.setMode('wireframe'));
+
+    /* Sound Toggle */
+    document.getElementById('btn-sound').addEventListener('click', function() {
+      AudioEngine.soundEnabled = !AudioEngine.soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      icon.textContent = AudioEngine.soundEnabled ? '🔊' : '🔇';
+      this.classList.toggle('border-amber-400', AudioEngine.soundEnabled);
+    });
+
+    /* Summary Modal Handlers */
+    const summaryModal = document.getElementById('modal-summary');
+    document.getElementById('btn-open-summary').addEventListener('click', () => {
+      summaryModal.classList.remove('hidden');
+      AudioEngine.playCelebrationFanfare();
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
+      AudioEngine.speak("Chúc mừng em đã trở thành Nhà khám phá hình khối của lớp 3A2!");
+    });
+    document.getElementById('btn-close-summary').addEventListener('click', () => {
+      summaryModal.classList.add('hidden');
+    });
+
+    /* Smooth 60 FPS Render Loop */
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Subtle breathing motion for vertices in mode 1
+      if (AppState.mode === 'vertex') {
+        const pulse = 1 + Math.sin(time * 3) * 0.08;
+        ['cube', 'box'].forEach(k => {
+          Models[k].vertices.forEach(v => {
+            if (!v.userData.selected) {
+              v.scale.set(pulse, pulse, pulse);
+            }
+          });
+        });
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Startup initialization
+    window.onload = function() {
+      ResponsiveLayout.updateLayout();
+      AppState.setMode('vertex');
+      animate();
+    };
+  </script>
+</body>
+</html>
